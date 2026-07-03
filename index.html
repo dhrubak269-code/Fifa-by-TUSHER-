@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TUSHAR - LIVE TV</title>
+
+<!-- HLS.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+:root{
+    --bg:#050816;
+    --cyan:#00f5ff;
+    --purple:#b84dff;
+    --blue:#4d7cff;
+    --text:#eaf6ff;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+    background:radial-gradient(circle,#0b1d44 0%,#050816 45%,#02030a 100%);
+    color:var(--text);
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:12px 10px;
+    -webkit-overflow-scrolling:touch;
+}
+
+.particles{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+}
+
+.particles span{
+    position:absolute;
+    bottom:-20px;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 12px var(--cyan);
+    animation:rise linear infinite;
+}
+
+.card{
+    width:100%;
+    max-width:700px;
+    padding:20px 16px 25px;
+    border-radius:20px;
+    background:rgba(8,15,35,.88);
+    border:1px solid rgba(0,245,255,.3);
+    box-shadow:0 0 30px rgba(0,245,255,.15);
+    backdrop-filter:blur(8px);
+    text-align:center;
+    position:relative;
+    z-index:1;
+    margin:10px auto;
+}
+
+h1{
+    font-size:36px;
+    letter-spacing:8px;
+    color:#fff;
+    text-shadow:0 0 10px var(--cyan),0 0 30px var(--purple);
+    margin-bottom:15px;
+}
+
+/* === LIVE BOX === */
+.box{
+    margin:12px 0;
+    padding:12px 10px;
+    border-radius:16px;
+    border:1px solid rgba(0,245,255,.25);
+    background:rgba(255,255,255,.03);
+}
+
+.box h2{
+    color:var(--cyan);
+    margin-bottom:10px;
+    font-size:18px;
+}
+
+/* Video Wrapper */
+#video-wrapper{
+    position:relative;
+    width:100%;
+    border-radius:12px;
+    overflow:hidden;
+    background:#000;
+    border:1px solid rgba(0,245,255,.2);
+    box-shadow:0 0 20px rgba(0,245,255,.1);
+}
+
+#video-player{
+    width:100%;
+    display:block;
+    outline:none;
+    aspect-ratio:16/9;
+    background:#000;
+    max-height:50vh;
+    max-height:50dvh;
+    object-fit:contain;
+}
+
+/* Fullscreen override */
+#video-player:fullscreen{
+    max-height:100vh;
+    max-height:100dvh;
+    aspect-ratio:auto;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    object-fit:contain;
+}
+
+#video-player:-webkit-full-screen{
+    max-height:100vh;
+    max-height:100dvh;
+    aspect-ratio:auto;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    object-fit:contain;
+}
+
+/* Status */
+#status{
+    display:inline-block;
+    padding:4px 14px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:bold;
+    margin-top:8px;
+    background:rgba(0,245,255,.1);
+    border:1px solid rgba(0,245,255,.3);
+    color:var(--cyan);
+    transition:.3s;
+}
+
+#status.playing{
+    background:rgba(0,255,100,.15);
+    border-color:#00ff64;
+    color:#00ff64;
+    box-shadow:0 0 12px rgba(0,255,100,.2);
+}
+
+#status.error{
+    background:rgba(255,50,50,.15);
+    border-color:#ff3232;
+    color:#ff3232;
+}
+
+/* === CHANNEL BUTTONS - VERTICAL === */
+.buttons{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:18px;
+    padding:14px 12px;
+    border-radius:16px;
+    border:1px solid rgba(0,245,255,.2);
+    background:rgba(255,255,255,.02);
+}
+
+.buttons::before{
+    content:"📡 CHANNELS";
+    display:block;
+    width:100%;
+    font-size:12px;
+    letter-spacing:4px;
+    color:rgba(0,245,255,.6);
+    margin-bottom:6px;
+    text-align:center;
+}
+
+.buttons a{
+    display:block;
+    padding:12px 20px;
+    border-radius:12px;
+    text-decoration:none;
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    border:1px solid var(--cyan);
+    background:rgba(0,245,255,.05);
+    transition:.3s;
+    cursor:pointer;
+    width:100%;
+    text-align:center;
+    -webkit-tap-highlight-color:transparent;
+}
+
+.buttons a small{
+    display:inline;
+    font-weight:400;
+    opacity:.8;
+}
+
+.buttons a:hover,
+.buttons a.active{
+    background:var(--cyan);
+    color:#000;
+    box-shadow:0 0 18px var(--cyan);
+}
+
+.buttons a.active{
+    background:var(--cyan);
+    color:#000;
+    box-shadow:0 0 20px var(--cyan);
+    border-color:var(--cyan);
+}
+
+@keyframes rise{
+    from{
+        transform:translateY(0);
+        opacity:1;
+    }
+    to{
+        transform:translateY(-110vh);
+        opacity:0;
+    }
+}
+
+/* ===== LANDSCAPE MOBILE ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+    body{
+        padding:4px 8px;
+        align-items:flex-start;
+    }
+    .card{
+        padding:10px 10px 14px;
+        margin:4px auto;
+        border-radius:12px;
+    }
+    h1{
+        font-size:22px;
+        letter-spacing:4px;
+        margin-bottom:6px;
+    }
+    .box{
+        padding:6px 6px;
+        margin:6px 0;
+    }
+    .box h2{
+        font-size:14px;
+        margin-bottom:4px;
+    }
+    #video-player{
+        max-height:45vh;
+        max-height:45dvh;
+    }
+    .buttons{
+        gap:5px;
+        padding:8px 6px;
+        margin-top:8px;
+    }
+    .buttons a{
+        padding:8px 14px;
+        font-size:12px;
+    }
+    #status{
+        font-size:10px;
+        padding:2px 8px;
+        margin-top:4px;
+    }
+}
+
+/* ===== MOBILE PORTRAIT ===== */
+@media(max-width:500px) and (orientation: portrait){
+    body{
+        padding:8px 5px;
+    }
+    .card{
+        padding:14px 10px 18px;
+        border-radius:16px;
+    }
+    h1{
+        font-size:28px;
+        letter-spacing:5px;
+        margin-bottom:10px;
+    }
+    .box{
+        padding:8px 6px;
+        margin:8px 0;
+    }
+    .box h2{
+        font-size:16px;
+        margin-bottom:6px;
+    }
+    #video-player{
+        max-height:40vh;
+        max-height:40dvh;
+    }
+    .buttons{
+        gap:6px;
+        padding:10px 8px;
+        margin-top:12px;
+    }
+    .buttons a{
+        padding:10px 16px;
+        font-size:13px;
+    }
+    #status{
+        font-size:11px;
+        padding:3px 10px;
+    }
+}
+
+/* Very small screens */
+@media(max-width:360px){
+    h1{
+        font-size:22px;
+        letter-spacing:3px;
+    }
+    .buttons a{
+        font-size:12px;
+        padding:8px 12px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="card">
+
+<h1>TUSHAR</h1>
+
+<!-- ===== LIVE BOX ===== -->
+<div class="box">
+    <h2>📺 LIVE</h2>
+
+    <div id="video-wrapper">
+        <video id="video-player" playsinline webkit-playsinline controls></video>
+    </div>
+
+    <div id="status">⏸ Select a channel to play</div>
+</div>
+
+<!-- ===== CHANNEL BUTTONS - VERTICAL ===== -->
+<div class="buttons" id="channels">
+    <a data-url="http://198.195.239.50:8095/somoyTv/tracks-v1a1/mono.m3u8">Server 1 — Somoy TV</a>
+    <a data-url="http://198.195.239.50:8095/tsports/index.m3u8">Server 2 — T Sports</a>
+    <a data-url="http://198.195.239.50:8095/ptv/index.m3u8">Server 3 — PTV</a>
+    <a data-url="http://198.195.239.50:8095/btv/video.m3u8">Server 4 — BTV</a>
+</div>
+
+</div>
+
+<script>
+/* ===== Orientation check ===== */
+(function(){
+    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if(!isMobile) return;
+    const card = document.querySelector('.card');
+    function checkOrientation(){
+        if(window.innerHeight < window.innerWidth && window.innerHeight < 500){
+            card.style.marginTop = '0';
+        } else {
+            card.style.marginTop = '';
+        }
+    }
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', function(){
+        setTimeout(checkOrientation, 300);
+    });
+    checkOrientation();
+})();
+
+/* ===== Particles ===== */
+const particles=document.getElementById("particles");
+for(let i=0;i<30;i++){
+    const p=document.createElement("span");
+    const size=Math.random()*4+2;
+    p.style.left=Math.random()*100+"vw";
+    p.style.width=size+"px";
+    p.style.height=size+"px";
+    p.style.animationDuration=(8+Math.random()*10)+"s";
+    p.style.animationDelay=(-Math.random()*10)+"s";
+    particles.appendChild(p);
+}
+
+/* ===== HLS Player ===== */
+const video    = document.getElementById("video-player");
+const statusEl = document.getElementById("status");
+const channels = document.querySelectorAll("#channels a");
+
+let currentHls = null;
+
+function loadChannel(url, btn){
+
+    if(currentHls){
+        currentHls.destroy();
+        currentHls = null;
+    }
+
+    channels.forEach(b => b.classList.remove("active"));
+    if(btn) btn.classList.add("active");
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
+    statusEl.textContent = "⏳ Loading...";
+    statusEl.className = "";
+
+    // Native HLS for Safari/iOS
+    if(video.canPlayType("application/vnd.apple.mpegurl")){
+        video.src = url;
+        video.play().catch(()=>{});
+        video.addEventListener("loadedmetadata", ()=>{
+            statusEl.textContent = "▶ Playing";
+            statusEl.className = "playing";
+        }, {once:true});
+        video.addEventListener("error", ()=>{
+            statusEl.textContent = "✖ Error loading stream";
+            statusEl.className = "error";
+        }, {once:true});
+        return;
+    }
+
+    // HLS.js for other browsers
+    if(Hls.isSupported()){
+        currentHls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            maxBufferLength: 30,
+            manifestLoadPolicy: {
+                default: { maxTimeToFirstByteMs: 10000, maxLoadTimeMs: 30000 }
+            }
+        });
+
+        currentHls.loadSource(url);
+        currentHls.attachMedia(video);
+
+        currentHls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+            video.play().catch(()=>{});
+            statusEl.textContent = "▶ Playing";
+            statusEl.className = "playing";
+        });
+
+        currentHls.on(Hls.Events.ERROR, (event, data)=>{
+            if(data.fatal){
+                statusEl.textContent = "✖ Stream error — try another channel";
+                statusEl.className = "error";
+            }
+        });
+    }
+    else {
+        statusEl.textContent = "✖ HLS not supported in this browser";
+        statusEl.className = "error";
+    }
+}
+
+// Click handlers
+channels.forEach(btn => {
+    btn.addEventListener("click", function(e){
+        e.preventDefault();
+        const url = this.dataset.url;
+        if(url) loadChannel(url, this);
+    });
+});
+
+// Auto-load first channel
+if(channels.length > 0){
+    const first = channels[0];
+    loadChannel(first.dataset.url, first);
+}
+</script>
+
+</body>
+</html>
